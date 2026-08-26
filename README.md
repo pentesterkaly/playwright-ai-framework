@@ -40,9 +40,185 @@ SauceDemo is treated as an application-specific example. It is deliberately isol
 
 ---
 
+## Quick Start
+
+This section is intended for someone cloning the repository and setting it up in VS Code for the first time.
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/pentesterkaly/playwright-ai-framework.git
+cd playwright-ai-framework
+```
+
+Open the folder in VS Code.
+
+If the `code` command is available:
+
+```bash
+code .
+```
+
+Otherwise use **VS Code → File → Open Folder**.
+
+### 2. Install dependencies
+
+From the VS Code terminal:
+
+```bash
+npm install
+npx playwright install chromium
+```
+
+### 3. Configure the environment
+
+Create a local `.env` file in the project root:
+
+```env
+BASE_URL=https://www.saucedemo.com
+```
+
+Do **not** commit `.env`.
+
+The repository `.gitignore` already excludes it.
+
+### 4. Validate the installation
+
+Run TypeScript validation:
+
+```bash
+npx tsc --noEmit
+```
+
+Then run the application seed test:
+
+```bash
+npx playwright test applications/saucedemo/tests/seed.spec.ts --project=chromium --reporter=line
+```
+
+A successful TypeScript check produces no output.
+
+The seed test should pass before continuing with the AI workflow.
+
+### 5. Use the AI agents from VS Code
+
+Open **GitHub Copilot Chat** in VS Code and select **Agent** mode.
+
+The repository contains four specialist AI agents:
+
+- **Planner** — explores the application and creates test plans.
+- **Generator** — converts approved plans into Playwright tests.
+- **Reviewer** — reviews generated tests against project rules and requirements.
+- **Healer** — diagnoses test failures and fixes test defects only when evidence supports the fix.
+
+Recommended workflow:
+
+```text
+Planner
+   ↓
+Approved specification
+   ↓
+Generator
+   ↓
+Generated Playwright test
+   ↓
+Reviewer
+   ↓
+Execute
+   ↓
+PASS ───────────────→ Done
+   ↓
+FAIL
+   ↓
+Healer
+   ↓
+Diagnose
+   ↓
+Fix only when justified
+   ↓
+Verify
+```
+
+### 6. Example Planner request
+
+In VS Code Agent mode:
+
+```text
+Read AGENTS.md and use the Playwright Test Planner agent.
+Explore the current SauceDemo application and create a test plan
+for the login functionality.
+```
+
+Planner output belongs under:
+
+```text
+applications/saucedemo/specs/
+```
+
+### 7. Example Generator request
+
+After approving a scenario:
+
+```text
+Use the Playwright Test Generator agent to implement the approved
+login scenario from applications/saucedemo/specs/login-functionality.md.
+Reuse the existing Page Objects, shared fixture, and approved test data.
+```
+
+Generated tests belong under:
+
+```text
+applications/saucedemo/tests/
+```
+
+### 8. Example Reviewer request
+
+```text
+Use the Playwright Test Reviewer agent to review the generated test.
+Do not modify any files.
+```
+
+### 9. Example Healer request
+
+When a test fails:
+
+```text
+Use the Playwright Test Healer agent to diagnose the failure.
+Do not change the test unless evidence shows it is a test defect.
+Preserve the original test intent.
+```
+
+### 10. Run tests manually
+
+Run the complete suite:
+
+```bash
+npx playwright test
+```
+
+Run a specific test:
+
+```bash
+npx playwright test applications/saucedemo/tests/auth/standard-login.spec.ts --project=chromium --reporter=line
+```
+
+Run the generated login test:
+
+```bash
+npx playwright test applications/saucedemo/tests/login-success.spec.ts --project=chromium --reporter=line
+```
+
+Run TypeScript validation:
+
+```bash
+npx tsc --noEmit
+```
+
+---
+
 # Architecture
 
-The project is divided into two major areas:
+The project is divided into reusable framework infrastructure and application-specific implementation.
 
 ```text
 playwright-ai-framework/
@@ -52,16 +228,16 @@ playwright-ai-framework/
 │   ├── pages/                         # Shared/base Page Objects
 │   └── utils/                         # Reusable helper functions
 │
-├── applications/                     # Application-specific code
+├── applications/                      # Application-specific code
 │   └── saucedemo/
 │       ├── config/
-│       │   └── application.md         # Application/environment context
+│       │   └── application.md
 │       │
-│       ├── pages/                     # SauceDemo Page Objects
+│       ├── pages/
 │       │   ├── LoginPage.ts
 │       │   └── InventoryPage.ts
 │       │
-│       ├── specs/                     # AI Planner output
+│       ├── specs/
 │       │   ├── login-functionality.md
 │       │   └── saucedemo-login-v2.md
 │       │
@@ -75,18 +251,26 @@ playwright-ai-framework/
 │           └── seed.spec.ts
 │
 ├── .github/
-│   └── agents/
-│       ├── playwright-test-planner.agent.md
-│       ├── playwright-test-generator.agent.md
-│       ├── playwright-test-reviewer.agent.md
-│       └── playwright-test-healer.agent.md
+│   ├── agents/
+│   │   ├── playwright-test-planner.agent.md
+│   │   ├── playwright-test-generator.agent.md
+│   │   ├── playwright-test-reviewer.agent.md
+│   │   └── playwright-test-healer.agent.md
+│   └── workflows/
+│
+├── .vscode/
+│   └── mcp.json
+│
+├── docs/
+│   ├── ai-playwright-framework.md
+│   └── project-architecture.md
 │
 ├── AGENTS.md
 ├── playwright.config.ts
 ├── tsconfig.json
 ├── package.json
 ├── package-lock.json
-├── .env
+├── .gitignore
 └── README.md
 ```
 
@@ -116,7 +300,7 @@ For example, SauceDemo's:
 
 - URLs
 - credentials
-- page objects
+- Page Objects
 - test data
 - test plans
 - application-specific tests
@@ -178,7 +362,7 @@ The project-wide rules remain:
 AGENTS.md
 ```
 
-The objective is that adding a new application should primarily require adding the application's own configuration, Page Objects, test data, test plans, and tests — not rebuilding the framework.
+The objective is that adding a new application should primarily require adding its own configuration, Page Objects, test data, test plans, and tests — not rebuilding the framework.
 
 ---
 
@@ -187,51 +371,50 @@ The objective is that adding a new application should primarily require adding t
 The framework uses four specialist AI agents.
 
 ```text
-                    ┌─────────────┐
-                    │   Planner   │
-                    └──────┬──────┘
-                           │
-                           ▼
-                  Approved test plan
-                           │
-                           ▼
-                    ┌─────────────┐
-                    │  Generator  │
-                    └──────┬──────┘
-                           │
-                           ▼
-                    Generated test
-                           │
-                           ▼
-                    ┌─────────────┐
-                    │  Reviewer   │
-                    └──────┬──────┘
-                           │
-                           ▼
-                       APPROVED
-                           │
-                           ▼
-                    Test execution
-                           │
-                     ┌─────┴─────┐
-                     │           │
-                   PASS        FAIL
-                                 │
-                                 ▼
-                          ┌─────────────┐
-                          │   Healer    │
-                          └──────┬──────┘
-                                 │
-                                 ▼
-                           Diagnose first
-                          /              \
-                 Test defect          App defect
-                     │                    │
-                     ▼                    ▼
-                 Safe fix             Do not fix
-                     │                    │
-                     ▼                    ▼
-                 Run twice             Report
+                     ┌─────────────┐
+                     │   Planner   │
+                     └──────┬──────┘
+                            │
+                            ▼
+                   Approved test plan
+                            │
+                            ▼
+                     ┌─────────────┐
+                     │  Generator  │
+                     └──────┬──────┘
+                            │
+                            ▼
+                     Generated test
+                            │
+                            ▼
+                     ┌─────────────┐
+                     │  Reviewer   │
+                     └──────┬──────┘
+                            │
+                            ▼
+                        APPROVED
+                            │
+                            ▼
+                     Test execution
+                            │
+                     ┌──────┴──────┐
+                     │             │
+                   PASS          FAIL
+                                   │
+                                   ▼
+                            ┌─────────────┐
+                            │   Healer    │
+                            └──────┬──────┘
+                                   │
+                                   ▼
+                             Diagnose first
+                            /                                 Test defect          App defect
+                       │                    │
+                       ▼                    ▼
+                   Safe fix             Do not fix
+                       │                    │
+                       ▼                    ▼
+                   Run twice             Report
 ```
 
 The agents are intentionally separated by responsibility.
@@ -266,7 +449,7 @@ applications/<application-name>/specs/
 
 The Planner does not write Playwright test code.
 
-It is deliberately read-only with respect to the application and only writes its approved planning output.
+It is deliberately read-only with respect to the application and only writes its planning output.
 
 ---
 
@@ -371,8 +554,6 @@ C — Environment/infrastructure issue
 D — Cannot be confidently classified
 ```
 
-This distinction is critical.
-
 A test failing does not automatically mean the test is wrong.
 
 The Healer should investigate:
@@ -452,7 +633,7 @@ to:
 await expect(inventoryPage.productsHeader).toBeVisible();
 ```
 
-just to make a failing test pass would be considered an unacceptable healing strategy when the text itself is part of the requirement.
+just to make a failing test pass would be an unacceptable healing strategy when the text itself is part of the requirement.
 
 ---
 
@@ -596,7 +777,7 @@ The AI agents use the application configuration to understand the current applic
 
 # Configuration Philosophy
 
-The framework intentionally avoids putting application-specific URLs and credentials into the reusable AI agents.
+The framework intentionally avoids putting application-specific URLs and credentials into reusable AI agents.
 
 The agents should discover application-specific information from:
 
@@ -610,7 +791,6 @@ rather than containing assumptions such as:
 SauceDemo
 https://www.saucedemo.com
 standard_user
-secret_sauce
 ```
 
 This is important for portability.
@@ -689,7 +869,7 @@ The seed test provides a basic environment baseline.
 
 It should not be treated as proof that the application is completely healthy.
 
-The Planner, Generator, Reviewer, and Healer must still validate the relevant application behaviour when required.
+The Planner, Generator, Reviewer, and Healer must still validate relevant application behaviour when required.
 
 ---
 
@@ -814,9 +994,7 @@ This incremental approach reduces the risk of creating a large framework that ha
 
 The architecture has been tested against SauceDemo.
 
-Validated capabilities include:
-
-### TypeScript
+## TypeScript
 
 ```text
 npx tsc --noEmit
@@ -828,7 +1006,7 @@ Result:
 PASS
 ```
 
-### Seed test
+## Seed test
 
 Result:
 
@@ -836,7 +1014,7 @@ Result:
 PASS
 ```
 
-### Standard login test
+## Standard login test
 
 Result:
 
@@ -844,7 +1022,7 @@ Result:
 PASS
 ```
 
-### Planner
+## Planner
 
 Validated that the Planner generated:
 
@@ -858,7 +1036,7 @@ rather than using the old root-level:
 specs/
 ```
 
-### Generator
+## Generator
 
 Validated that the Generator created:
 
@@ -872,7 +1050,7 @@ and reused:
 - Existing Login Page Object
 - Existing test data
 
-### Reviewer
+## Reviewer
 
 Reviewer result:
 
@@ -890,7 +1068,7 @@ The Reviewer confirmed:
 - Scenario preservation
 - No unnecessary framework duplication
 
-### Healer
+## Healer
 
 A deliberate test defect was introduced:
 
@@ -905,7 +1083,7 @@ The Healer correctly classified it as:
 A — test defect
 ```
 
-It investigated the browser evidence, corrected the assertion, preserved the assertion intent, and ran the healed test twice.
+It investigated browser evidence, corrected the assertion, preserved the assertion intent, and ran the healed test twice.
 
 Result:
 
@@ -1076,6 +1254,16 @@ Use environment variables or approved secret-management mechanisms.
 
 Application configuration Markdown files should contain only non-secret information.
 
+The repository `.gitignore` also excludes generated/local artifacts such as:
+
+```text
+node_modules/
+test-results/
+playwright-report/
+.playwright-mcp/
+.DS_Store
+```
+
 ---
 
 # Git and Repository Hygiene
@@ -1094,237 +1282,87 @@ Check that:
 - Application-specific changes remain under the correct application directory.
 - Framework changes are genuinely reusable.
 
-If Git is not initialized yet:
+For a new checkout:
 
 ```bash
-git init
+npm install
+npx playwright install chromium
 ```
 
-Then establish an appropriate `.gitignore` before committing.
+Then validate:
 
----
-
-# Design Principles
-
-The framework follows several core principles.
-
-## 1. Application independence
-
-The framework must not assume a particular application.
-
-## 2. Separation of concerns
-
-Reusable infrastructure and application implementation are separate.
-
-## 3. Evidence before healing
-
-A failing test must be diagnosed before it is modified.
-
-## 4. Preserve test intent
-
-Healing must not weaken requirements just to produce a passing result.
-
-## 5. Reuse before duplication
-
-Existing Page Objects, fixtures, and test data should be reused.
-
-## 6. Explicit quality gates
-
-Planner → Generator → Reviewer creates a controlled test-development pipeline.
-
-## 7. Small, focused changes
-
-Agents should avoid unnecessary refactoring.
-
-## 8. Human-readable automation
-
-Generated tests should remain understandable to engineers.
-
-## 9. Environment independence
-
-URLs and environment details should be configurable.
-
-## 10. Framework evolution through reusable capabilities
-
-Framework changes should solve reusable problems rather than application-specific problems.
-
----
-
-# Current Limitations
-
-This framework is validated, but it is not a finished enterprise platform.
-
-Current areas that may require future development include:
-
-- More sophisticated application/environment selection
-- CI/CD integration
-- Allure reporting configuration
-- Parallel/sharded execution in CI
-- Authentication/session management
-- API testing integration
-- Accessibility testing
-- Visual regression testing
-- Better test selection and tagging strategy
-- Automated artifact retention
-- More comprehensive cross-browser validation
-- Additional framework utilities
-- Second-application portability validation
-
-These should be added based on real requirements rather than speculative complexity.
-
----
-
-# Future Direction
-
-The next major architectural validation is to introduce a second application:
-
-```text
-applications/
-├── saucedemo/
-└── acx/
-```
-
-The objective is to demonstrate that:
-
-- The same framework works for both.
-- The same AI agents work for both.
-- Application-specific code remains isolated.
-- Application-specific plans remain isolated.
-- Application-specific test data remains isolated.
-- The reusable framework does not need to be duplicated.
-
-That will provide stronger evidence that the framework is genuinely portable.
-
----
-
-# Quick Reference
-
-## Framework
-
-```text
-framework/
-```
-
-Reusable code only.
-
-## Applications
-
-```text
-applications/<application-name>/
-```
-
-Application-specific implementation.
-
-## AI agents
-
-```text
-.github/agents/
-```
-
-Planner, Generator, Reviewer, and Healer.
-
-## Project rules
-
-```text
-AGENTS.md
-```
-
-## Application configuration
-
-```text
-applications/<application-name>/config/application.md
-```
-
-## Test plans
-
-```text
-applications/<application-name>/specs/
-```
-
-## Tests
-
-```text
-applications/<application-name>/tests/
-```
-
-## Test data
-
-```text
-applications/<application-name>/tests/data/
-```
-
-## Shared fixtures
-
-```text
-framework/fixtures/
-```
-
-## Shared Page Objects
-
-```text
-framework/pages/
-```
-
-## Utilities
-
-```text
-framework/utils/
+```bash
+npx tsc --noEmit
+npx playwright test applications/saucedemo/tests/seed.spec.ts --project=chromium
 ```
 
 ---
 
-# Philosophy
+# Project Development Workflow
 
-This project is not intended to be a collection of generated tests.
-
-The objective is to build a **repeatable engineering workflow** in which AI assists with:
+The intended engineering workflow is:
 
 ```text
 Explore
-  ↓
+   ↓
 Plan
-  ↓
+   ↓
+Approve scenario
+   ↓
 Generate
-  ↓
+   ↓
 Review
-  ↓
+   ↓
 Execute
-  ↓
+   ↓
+PASS ───────────────→ Done
+   ↓
+FAIL
+   ↓
 Diagnose
-  ↓
-Heal when justified
-  ↓
-Verify
+   ↓
+Classify
+   ↓
+Fix only if it is a test defect
+   ↓
+Verify twice
 ```
 
-The AI is given strict boundaries rather than unrestricted authority.
+The AI is intentionally given boundaries rather than unrestricted authority.
 
-The most important rule is:
+The key engineering principle is:
 
 > A test should not be changed merely because it fails. First determine why it failed.
 
-That principle is what makes the Healer different from a simple "make the test pass" automation loop.
-
 ---
 
-# Status
+# Long-Term Objective
 
-Current framework status:
+The framework is intended to evolve into a reusable foundation for multiple application automation projects.
+
+The target model is:
 
 ```text
-Playwright + TypeScript             ✅
-Reusable framework layer            ✅
-Application isolation               ✅
-Environment configuration           ✅
-Page Object architecture            ✅
-AI Planner                          ✅
-AI Generator                        ✅
-AI Reviewer                         ✅
-AI Healer                           ✅
-Controlled healing validation       ✅
-TypeScript validation               ✅
-SauceDemo validation                ✅
-Second application validation       ⏳
+One reusable Playwright framework
+             |
+             +-- Application A
+             |
+             +-- Application B
+             |
+             +-- Application C
+             |
+             +-- Future applications
 ```
 
-The framework is ready for continued development and validation against additional applications.
+while retaining the same:
+
+- Engineering rules
+- Page Object standards
+- Fixture architecture
+- AI planning process
+- AI generation process
+- AI review process
+- AI healing safeguards
+- Environment configuration strategy
+
+The framework is designed around **repeatability, isolation, maintainability, and evidence-based AI assistance**, rather than simply generating Playwright tests as quickly as possible.
