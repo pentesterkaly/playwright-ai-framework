@@ -1,0 +1,16 @@
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# Environment / secrets
+.env
+
+# Playwright MCP generated files
+.playwright-mcp/
+
+# macOS
+.DS_Store
